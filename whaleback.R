@@ -3,9 +3,10 @@ library(dplyr)
 library(tibble)
 library(ggplot2)
 library(ggpubr)
+library(gganimate)
 set.seed(1618)
 
-runs <- read_parquet("data/runs.parquet")
+# runs <- read_parquet("data/runs.parquet")
 # dartmouth <- runs |>
 #   tidyr::unnest(ski_area_ids) |>
 #   filter(ski_area_ids == "74e0060a96e0399ace1b1e5ef5af1e5197a19752") |>
@@ -17,95 +18,106 @@ runs <- read_parquet("data/runs.parquet")
 #   )
 # write_parquet(dart, "data/dartmouth_runs.parquet")
 
+
+# segments <- dart %>%
+#   rename(path = run_id, x = longitude, y = latitude) |> 
+#   group_by(path) %>%
+#   arrange(index) |> 
+#   mutate(
+#     xend = lead(x), # Next x-coordinate
+#     yend = lead(y)  # Next y-coordinate
+#   ) %>%
+#   filter(!is.na(xend)) # Remove rows where there is no "next" point
+# plot_center <- segments %>%
+#   ungroup() |> 
+#   summarise(
+#     center_x = (min(x, xend) + max(x, xend)) / 2,
+#     center_y = (min(y, yend) + max(y, yend)) / 2
+#   )
+# # Center the plot at calculated center
+# segments_transformed <- segments %>%
+#   mutate(
+#     dx = xend - x,  # x-direction
+#     dy = yend - y,  # y-direction
+#     x = plot_center$center_x,  # Shift start to plot center
+#     y = plot_center$center_y,  # Shift start to plot center
+#     xend = x + dx,      # Adjust endpoint
+#     yend = y + dy       # Adjust endpoint
+#   )
+# 
+# segments_transformed_c <- segments_transformed %>%
+#   mutate(
+#     xend = x + 7*dx,      # Adjust endpoint
+#     yend = y + 7*dy,       # Adjust endpoint
+#     state = "c"
+#   )
+# 
+# # Combine original and transformed data for animation
+# dartmouth_play <- bind_rows(
+#   segments %>% mutate(state = "a"),
+#   segments_transformed %>% mutate(state = "b"),
+#   segments_transformed_c,
+# )
+
+# write_parquet(dartmouth_play, "data/dartmouth_play.parquet")
+
+coord_dartmouth <- coord_cartesian(
+  xlim = c(-72.12, -72.0794),
+  ylim = c(43.7781, 43.7902)
+)
+
 dart <- read_parquet("data/dartmouth_runs.parquet") |> 
-  group_by(run_id) |> 
-  arrange(latitude, longitude)
+  group_by(run_id)
+dartmouth_play <- read_parquet("data/dartmouth_play.parquet")
+segments <- dartmouth_play |> 
+  filter(state == "a")
 dartmouth_img <- png::readPNG("images/dartmouth.png")
-runs <-  unique(dart$run_id)
-chec = dart |> 
-  # filter(run_id == runs[[7]]) |>
-  arrange(index) 
-chec |> 
+
+dart |> 
+  arrange(index) |> 
   ggplot() +
   aes(x = longitude, y = latitude) +
-  # background_image(dartmouth_img) +
+  background_image(dartmouth_img) +
   geom_point(color = "#f07178") +
-  # geom_text(aes(label = index)) +
-  geom_path(aes(group = run_id)) +
-  coord_cartesian(
-    # expand =
-    xlim = c(-72.12, -72.0792),
-    ylim = c(43.7781, 43.7902)
-  ) +
+  coord_dartmouth +
   theme_minimal() +
   NULL
 
-segments <- dart %>%
-  rename(path = run_id, x = longitude, y = latitude) |> 
-  group_by(path) %>%
+dart |> 
   arrange(index) |> 
-  mutate(
-    xend = lead(x), # Next x-coordinate
-    yend = lead(y)  # Next y-coordinate
-  ) %>%
-  filter(!is.na(xend)) # Remove rows where there is no "next" point
-plot_center <- segments %>%
-  ungroup() |> 
-  summarise(
-    center_x = (min(x, xend) + max(x, xend)) / 2,
-    center_y = (min(y, yend) + max(y, yend)) / 2
-  )
-# Center the plot at calculated center
-segments_transformed <- segments %>%
-  mutate(
-    dx = xend - x,  # x-direction
-    dy = yend - y,  # y-direction
-    x = plot_center$center_x,  # Shift start to plot center
-    y = plot_center$center_y,  # Shift start to plot center
-    xend = x + dx,      # Adjust endpoint
-    yend = y + dy       # Adjust endpoint
-  )
+  ggplot() +
+  aes(x = longitude, y = latitude) +
+  geom_point(color = "#f07178") +
+  coord_dartmouth +
+  theme_minimal() +
+  NULL
 
-segments_transformed_c <- segments_transformed %>%
-  mutate(
-    xend = x + 7*dx,      # Adjust endpoint
-    yend = y + 7*dy,       # Adjust endpoint
-    state = "c"
-  )
-
-# Combine original and transformed data for animation
-animation_data <- bind_rows(
-  segments %>% mutate(state = "a"),
-  segments_transformed %>% mutate(state = "b"),
-  segments_transformed_c,
-)
-
-
-# Create animation
-p <- ggplot(animation_data) +
+ggplot(segments) +
   geom_segment(
     color = "#f07178",
     aes(x = x, y = y, xend = xend, yend = yend),
     arrow = arrow(type = "closed", length = unit(0.2, "cm"))
   ) +
-  # aes(color = factor(path)) +
   theme_minimal() +
-  # rcartocolor::scale_color_carto_d() +
-  # scale_color_viridis_d() +
-  # labs(color = "Path") +
+  coord_dartmouth +
   theme(
     legend.position = "none"
-    
+  )
+
+p <- ggplot(dartmouth_play) +
+  geom_segment(
+    color = "#f07178",
+    aes(x = x, y = y, xend = xend, yend = yend),
+    arrow = arrow(type = "closed", length = unit(0.2, "cm"))
   ) +
-  # geom_segment(
-  #   aes(x = x, y = y, xend = xend, yend = yend, color = factor(path)),
-  #   arrow = arrow(type = "closed", length = unit(0.2, "cm"))
-  # ) +
-  # theme_minimal() +
-  # labs(color = "Path") +
+  theme_minimal() +
+  coord_dartmouth +
+  theme(
+    legend.position = "none"
+  ) +
   coord_fixed() +
   ggtitle("Shifting Arrows: {closest_state}")
-p
+# p
 p_play = p +
   transition_states(state, transition_length = 2, state_length = 1) +
   ease_aes('cubic-in-out') 
@@ -113,37 +125,10 @@ p_play = p +
 animate(p_play, width = 600, height = 400, nframes = 100, fps = 20)
 
 # Plot with arrows for each segment
-# ggplot(segments) +
-#   geom_segment(
-#     color = "#f07178",
-#     aes(x = x, y = y, xend = xend, yend = yend),
-#     arrow = arrow(type = "closed", length = unit(0.2, "cm"))
-#   ) +
-#   # aes(color = factor(path)) +
-#   theme_minimal() +
-#   # rcartocolor::scale_color_carto_d() +
-#   # scale_color_viridis_d() +
-#   # labs(color = "Path") +
-#   theme(
-#     legend.position = "none"
-#   
-#   )
 
-dart |> 
-  # filter(run_id == runs[[1]]) |>
-  arrange(index) |> 
-  ggplot() +
-  aes(x = longitude, y = latitude) +
-  background_image(dartmouth_img) +
-  geom_point(color = "#f07178") +
-  geom_path(aes(group = run_id)) +
-  coord_cartesian(
-    # expand =
-    xlim = c(-72.12, -72.0794),
-    ylim = c(43.7781, 43.7902)
-  ) +
-  theme_minimal() +
-  NULL
+
+
+
 
 
 # Convert to sf object
