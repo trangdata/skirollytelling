@@ -83,8 +83,6 @@ These are the two signature sides of the Skiway, <span style="color: #FF8C42;">*
 
 :::{#cr-dots-overlay}
 ```{r dots-overlay}
-
-
 dart |>
   ggplot() +
   aes(x = longitude, y = latitude, color = winslow) +
@@ -125,10 +123,16 @@ ggplot(dartmouth_segs) +
 ```
 :::
 
-If we gather the coordinates for all trail segments and connect the dots, we can treat each of these segments as a <span style="color: #f07178;">vector</span>,
-scale the vectors by their <span style="color: #FFC857;">vertical drops</span>,
-and summarize them in a ...
-[@cr-segments]
+:::{focus-on="cr-segments"}
+If we:
+
+- gather the coordinates for all trail segments,
+- connect the dots,
+- treat each of these segments as a <span style="color: #f07178;">vector</span>, and
+- scale the vectors by their <span style="color: #FFC857;">vertical drops</span>,
+
+we can summarize them in a ...
+:::
 
 ::::
 <div style="--cr-narrative-sidebar-width: 3fr;">
@@ -151,13 +155,10 @@ Highlighted is the <span style="color: #f07178;">**Northwest by West**</span> sp
 
 :::{#cr-rose-nwbw}
 ```{r rose-nwbw}
-bears_play <- dartmouth |>
-  mutate(
-    color = if_else((row_number()) != 28, "#004B59", "#f07178"),
-  )
-rose_highlight <- plot_rose(bears_play, "", labels = c("N", "E", "S", "W"), highlight = TRUE) +
+dartmouth |>
+  mutate(color = if_else((row_number()) != 28, "#004B59", "#f07178")) |> 
+  plot_rose("", labels = c("N", "E", "S", "W"), highlight = TRUE) +
   geom_text(x = 300, y = 470, label = "NWbW", color = "#EBEBEB", size = 4)
-rose_highlight
 ```
 :::
 
@@ -168,9 +169,7 @@ dartmouth_segs |>
   mutate(nwbw = group == 28) |>
   ggplot() +
   aes(x = x, y = y, xend = xend, yend = yend, color = nwbw) +
-  geom_segment(
-    arrow = arrow(type = "closed", length = unit(0.1, "cm"))
-  ) +
+  geom_segment(arrow = arrow(type = "open", length = unit(0.1, "cm"))) +
   scale_color_manual(values = c("#004B59", "#f07178"), guide = "none") +
   coord_dartmouth +
   bg_transparent() +
@@ -188,9 +187,7 @@ dartmouth_segs |>
   mutate(nne = group == 3) |>
   ggplot() +
   aes(x = x, y = y, xend = xend, yend = yend, color = nne) +
-  geom_segment(
-    arrow = arrow(type = "closed", length = unit(0.1, "cm"))
-  ) +
+  geom_segment(arrow = arrow(type = "open", length = unit(0.1, "cm"))) +
   scale_color_manual(values = c("#004B59", "#f07178"), guide = "none") +
   coord_dartmouth +
   bg_transparent() +
@@ -203,9 +200,7 @@ dartmouth_segs |>
 :::{#cr-rose-nne}
 ```{r rose-nne}
 dartmouth |>
-  mutate(
-    color = if_else((row_number()) != 3, "#004B59", "#f07178"),
-  ) |>
+  mutate(color = if_else((row_number()) != 3, "#004B59", "#f07178")) |>
   plot_rose("", labels = c("N", "E", "S", "W"), highlight = TRUE) +
   geom_text(x = 22, y = 750, label = "NNE", color = "#EBEBEB", size = 4)
 ```
@@ -252,14 +247,14 @@ This trend likely reflects the desire to maximize <span style="color: #36B37E;">
 
 :::{#cr-hemisphere}
 ```{r hemisphere}
-#| fig-width: 10
+#| fig-width: 12
 north <- hemi |> 
   filter(num_bins == n_groups, hemisphere == "north") |> 
-  plot_rose("Northern hemisphere", labels = c("N", "E", "S", "W"), size_title = 18)
+  plot_rose("Northern hemisphere", labels = c("N", "E", "S", "W"))
 
 south <- hemi |> 
   filter(num_bins == n_groups, hemisphere == "south") |> 
-  plot_rose("Southern hemisphere", labels = c("N", "E", "S", "W"), size_title = 18)
+  plot_rose("Southern hemisphere", labels = c("N", "E", "S", "W"))
 
 cowplot::plot_grid(north, south, ncol = 2)
 ```
