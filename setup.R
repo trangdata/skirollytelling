@@ -55,9 +55,13 @@ bearings_ls <- dat |>
 colors <- c("#f07178", "#004B59", "#FFC857", "#36B37E", "#FF8C42", "#F4F1E9", "#8A9393", "#2A2D34")
 
 bg_transparent <- function() {
+  theme_minimal() +
   theme(
     panel.background = element_rect(fill = "transparent", colour = NA),
     plot.background = element_rect(fill = "transparent", colour = NA),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    legend.position = "none",
   )
 }
 plot_rose <- function(dat, ski_area_name, size_title = 24, size_x = 20, highlight = FALSE, labels = NULL, type = NULL) {
@@ -98,10 +102,6 @@ plot_rose <- function(dat, ski_area_name, size_title = 24, size_x = 20, highligh
   }
   plot
 }
-whaleback <- bearings_ls[["Whaleback Mountain"]]
-dartmouth_bears <- bearings_ls[["Dartmouth Skiway"]]
-killington <- bearings_ls[["Killington Resort"]]
-
-# NWbW
-
-
+# whaleback <- bearings_ls[["Whaleback Mountain"]]
+dartmouth <- bearings_ls[["Dartmouth Skiway"]]
+# killington <- bearings_ls[["Killington Resort"]]

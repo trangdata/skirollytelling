@@ -34,7 +34,7 @@ Skiers and riders, you’ve all seen these trail maps—they're essential for na
 
 In particular, this map, beautifully painted by the legendary [James Niehues](https://en.wikipedia.org/wiki/James_Niehues), is of the <span style="color: #FF8C42;">**South Face**</span> of Big Sky, Montana.
 
-But have you ever wondered how common south-facing slopes are? In other words, do most ski trails in this hemisphere favor <span style="color: #FF8C42;">*southern*</span>** exposure, or are they more often found on the <span style="color: #36B37E;">*north*</span> side of the mountain?
+But have you ever wondered how common south-facing slopes are? In other words, do most ski trails in this hemisphere favor <span style="color: #FF8C42;">*southern*</span> exposure, or are they more often found on the <span style="color: #36B37E;">*north*</span> side of the mountain?
 @cr-southface
 
 :::{#cr-southface}
@@ -76,10 +76,6 @@ Take, for example, Dartmouth Skiway in Lyme, NH.
 
 ::::
 
-```{r}
-# knitr::knit_exit()
-```
-
 ::::{.cr-section}
 These are the two signature sides of the Skiway, <span style="color: #FF8C42;">**Holt's Ledge**</span> and <span style="color: #36B37E;">**Winslow Ledge**</span>.
 [@cr-dots-overlay]
@@ -103,11 +99,6 @@ dart |>
   background_image(dartmouth_img) +
   geom_point(size = 0.5) +
   coord_dartmouth +
-  theme_minimal() +
-  labs(x = NULL, y = NULL) +
-  theme(
-    axis.text = element_blank(),
-  ) +
   bg_transparent()
 ```
 :::
@@ -124,14 +115,8 @@ dart |>
   ggplot() +
   aes(x = longitude, y = latitude, color = winslow) +
   scale_color_manual(values = c("#FF8C42", "#36B37E"), guide = "none") +
-  # background_image(dartmouth_img) +
   geom_point(size = 0.5) +
   coord_dartmouth +
-  theme_minimal() +
-  labs(x = NULL, y = NULL) +
-  theme(
-    axis.text = element_blank(),
-  ) +
   bg_transparent()
 ```
 :::
@@ -147,13 +132,7 @@ ggplot(segments) +
     aes(x = x, y = y, xend = xend, yend = yend),
     arrow = arrow(type = "closed", length = unit(0.1, "cm"))
   ) +
-  theme_minimal() +
   coord_dartmouth +
-  labs(x = NULL, y = NULL) +
-  theme(
-    legend.position = "none",
-    axis.text = element_blank(),
-  ) +
   bg_transparent()
 ```
 :::
@@ -176,20 +155,17 @@ dartmouth_play <- ggplot(dartmouth_play_df) +
     aes(x = x, y = y, xend = xend, yend = yend),
     arrow = arrow(type = "closed", length = unit(0.1, "cm"))
   ) +
-  theme_minimal() +
   # coord_dartmouth +
-  labs(x = NULL, y = NULL) +
+  bg_transparent() +
   theme(
-    axis.text = element_blank(),
-    panel.grid = element_blank(), c
+    panel.grid = element_blank(),
   ) +
   coord_fixed(
     xlim = x_range - 0.0022,
     ylim = y_range + 0.00015,
     ratio = ratio
   ) +
-  bg_transparent() +
-  transition_states(state, transition_length = c(2, 1, 2), state_length = c(2, 1, 4)) +
+  transition_states(state, transition_length = c(2, 1, 2), state_length = c(2, 1, 8)) +
   ease_aes("cubic-in-out")
 
 animate(dartmouth_play, res = 300, nframes = 100)
@@ -205,7 +181,7 @@ Similar to how [wind roses](https://en.wikipedia.org/wiki/Wind_rose) chart wind 
 
 :::{#cr-dartmouth-rose}
 ```{r dartmouth-rose, dev="png", dev.args=list(bg="transparent")}
-plot_rose(dartmouth_bears, "", labels = c("N", "E", "S", "W"))
+plot_rose(dartmouth, "", labels = c("N", "E", "S", "W"))
 ```
 :::
 
@@ -216,7 +192,7 @@ Highlighted is the <span style="color: #f07178;">**Northwest by West**</span> sp
 
 :::{#cr-rose-nwbw}
 ```{r rose-nwbw}
-bears_play <- dartmouth_bears |>
+bears_play <- dartmouth |>
   mutate(
     color = if_else((row_number()) != 28, "#004B59", "#f07178"),
   )
@@ -229,28 +205,19 @@ rose_highlight
 :::{focus-on="cr-rose-nwbw"}
 ... to which these particular segments contribute.
 ```{r segments-highlight}
-# sysfonts::font_add_google("Quicksand", regular.wt = 500)
-# showtext::showtext_auto()
-
-seg_highlight <- segments |>
-  mutate(nwbw = group == 5) |>
+segments |>
+  mutate(nwbw = group == 28) |>
   ggplot() +
   aes(x = x, y = y, xend = xend, yend = yend, color = nwbw) +
   geom_segment(
-    # color = "#f07178",
     arrow = arrow(type = "closed", length = unit(0.1, "cm"))
   ) +
   scale_color_manual(values = c("#004B59", "#f07178"), guide = "none") +
-  theme_minimal() +
   coord_dartmouth +
-  labs(x = NULL, y = NULL) +
+  bg_transparent() +
   theme(
-    legend.position = "none",
-    axis.text = element_blank(),
     panel.grid = element_blank(),
-  ) +
-  bg_transparent()
-seg_highlight
+  ) 
 ```
 :::
 
@@ -258,33 +225,25 @@ seg_highlight
 And here's the <span style="color: #f07178;">**North North East**</span> spoke.<br><br>
 While these NNE segments may seem small, their steepness contribute to a significantly larger spoke in the rose compared to others.
 ```{r segments-highlight-nne}
-seg_highlight <- segments |>
-  mutate(nne = group == 30) |>
+segments |>
+  mutate(nne = group == 3) |>
   ggplot() +
   aes(x = x, y = y, xend = xend, yend = yend, color = nne) +
   geom_segment(
-    # color = "#f07178",
     arrow = arrow(type = "closed", length = unit(0.1, "cm"))
   ) +
   scale_color_manual(values = c("#004B59", "#f07178"), guide = "none") +
-  theme_minimal() +
   coord_dartmouth +
-  labs(x = NULL, y = NULL) +
+  bg_transparent() +
   theme(
-    legend.position = "none",
-    axis.text = element_blank(),
     panel.grid = element_blank(),
-    # plot.title = element_text(size = 15, color = "#EBEBEB"),
-    # plot.title = element_text(size = 16, family = "Quicksand", color = "#EBEBEB"),
-  ) +
-  bg_transparent()
-seg_highlight
+  )
 ```
 :::
 
 :::{#cr-rose-nne}
 ```{r rose-nne}
-dartmouth_bears |>
+dartmouth |>
   mutate(
     color = if_else((row_number()) != 3, "#004B59", "#f07178"),
   ) |>
@@ -334,7 +293,6 @@ In other words, a majority of slopes in the northern atmosphere oriented toward 
 
 This trend likely reflects the desire to maximize <span style="color: #36B37E;">snow retention</span> and minimize <span style="color: #FFC857;">sun exposure</span>, ensuring better skiing conditions and longer seasons.
 
-<!-- XXX hemisphere plot goes here -->
 ::::
 
 
