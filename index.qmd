@@ -1,0 +1,351 @@
+---
+title: "Illuminating the Patterns of the Slopes"
+format: 
+  closeread-html:
+    mainfont: Quicksand
+    css: styles.css
+    theme: solar
+    fontsize: 1.4rem
+    # remove-header-space: true
+    cr-style:
+      narrative-background-color-overlay: "rgb(0,43,54,0.75)"
+      narrative-text-color-overlay: "#e2e2e2"
+      narrative-background-color-sidebar: "#002B36"
+      narrative-text-color-sidebar: "#e2e2e2"
+      section-background-color: "#002B36"
+      narrative-overlay-max-width: "700px"
+knitr:
+  opts_chunk: 
+    out.width: "100%"
+    fig.width: 8
+    fig.height: 6
+    dev.args:
+      bg: transparent      
+title-block-banner: true
+---
+
+```{r setup}
+#| message: false
+source("setup.R")
+```
+
+:::{.cr-section}
+Skiers and riders, you’ve all seen these trail maps—they're essential for navigating the mountain, finding the fastest lift, or planning your next epic run. @cr-southface
+
+In particular, this map, beautifully painted by the legendary [James Niehues](https://en.wikipedia.org/wiki/James_Niehues), is of the <span style="color: #FF8C42;">**South Face**</span> of Big Sky, Montana.
+
+But have you ever wondered how common south-facing slopes are? In other words, do most ski trails in this hemisphere favor <span style="color: #FF8C42;">*southern*</span>** exposure, or are they more often found on the <span style="color: #36B37E;">*north*</span> side of the mountain?
+@cr-southface
+
+:::{#cr-southface}
+![](images/south-face_big-sky.jpg)
+:::
+:::
+
+
+::::{.cr-section layout="overlay-center"}
+We began our journey to answer this question by gathering data from [OpenSkiMap](https://openskimap.org/), which refines [OpenStreetMap](https://www.openstreetmap.org/) 
+to create an amazing interactive visualization of the world and all its ski trails. 
+@cr-openskimap
+
+:::{#cr-openskimap}
+![](images/openskimap.png)
+:::
+
+Thousands of OpenStreetMap contributors have worked for decades to annotate ski areas and their trails.<br><br>
+In this New Hampshire/Vermont region, ...
+@cr-openskimap
+
+
+... you can see the iconic Killington and its neighbor Pico. 
+[@cr-openskimap]{scale-by="3" pan-to="97%, -50%"}
+
+Here is a local favorite, Whaleback Mountain.
+[@cr-openskimap]{scale-by="3" pan-to="-90%, -85%"}
+
+
+Analyzing this data, we could see how much *north-facing* each ski area is by looking at its "ski rose".
+@cr-openskimap
+
+Take, for example, Dartmouth Skiway in Lyme, NH.
+[@cr-openskimap]{scale-by="5" pan-to="-200%, 140%"}
+
+:::{#cr-dartmouth-zoom}
+![](images/dartmouth-zoom.gif)
+:::
+
+::::
+
+```{r}
+# knitr::knit_exit()
+```
+
+::::{.cr-section}
+These are the two signature sides of the Skiway, <span style="color: #FF8C42;">**Holt's Ledge**</span> and <span style="color: #36B37E;">**Winslow Ledge**</span>.
+[@cr-dots-overlay]
+
+
+:::{#cr-dots-overlay}
+```{r dots-overlay}
+x1 <- -72.095
+y1 <- 43.7775
+x2 <- -72.101
+y2 <- 43.7900
+m <- (y2 - y1) / (x2 - x1)
+b <- y1 - m * x1
+
+dart |>
+  mutate(winslow = (m * longitude) + b < latitude) |>
+  arrange(index) |>
+  ggplot() +
+  aes(x = longitude, y = latitude, color = winslow) +
+  scale_color_manual(values = c("#FF8C42", "#36B37E"), guide = "none") +
+  background_image(dartmouth_img) +
+  geom_point(size = 0.5) +
+  coord_dartmouth +
+  theme_minimal() +
+  labs(x = NULL, y = NULL) +
+  theme(
+    axis.text = element_blank(),
+  ) +
+  bg_transparent()
+```
+:::
+
+On powder days, from <span style="color: #36B37E;">Winslow</span>, you can ski across the road
+and glide right to the bottom of <span style="color: #FF8C42;">Holt's</span> Ledge Double.
+[@cr-dots-only]
+
+:::{#cr-dots-only}
+```{r dots-only}
+dart |>
+  mutate(winslow = (m * longitude) + b < latitude) |>
+  arrange(index) |>
+  ggplot() +
+  aes(x = longitude, y = latitude, color = winslow) +
+  scale_color_manual(values = c("#FF8C42", "#36B37E"), guide = "none") +
+  # background_image(dartmouth_img) +
+  geom_point(size = 0.5) +
+  coord_dartmouth +
+  theme_minimal() +
+  labs(x = NULL, y = NULL) +
+  theme(
+    axis.text = element_blank(),
+  ) +
+  bg_transparent()
+```
+:::
+
+If we gather the coordinates for all trail segments and connect the dots, ...
+[@cr-segments]
+
+:::{#cr-segments}
+```{r segments}
+ggplot(segments) +
+  geom_segment(
+    color = "#f07178",
+    aes(x = x, y = y, xend = xend, yend = yend),
+    arrow = arrow(type = "closed", length = unit(0.1, "cm"))
+  ) +
+  theme_minimal() +
+  coord_dartmouth +
+  labs(x = NULL, y = NULL) +
+  theme(
+    legend.position = "none",
+    axis.text = element_blank(),
+  ) +
+  bg_transparent()
+```
+:::
+
+we can treat each of these segments as a <span style="color: #f07178;">**vector**</span>,
+scale the vectors by their <span style="color: #FFC857;">vertical drops</span>,
+and summarize them in a ...
+[@cr-dartmouth-play]
+<!-- #| fig-width: 7 -->
+<!-- #| fig-height: 5 -->
+<!-- #| out-width: "88.5%" -->
+
+:::{#cr-dartmouth-play}
+```{r dartmouth-play}
+#| cache: true
+dartmouth_play <- ggplot(dartmouth_play_df) +
+  geom_segment(
+    color = "#f07178",
+    alpha = 0.8,
+    aes(x = x, y = y, xend = xend, yend = yend),
+    arrow = arrow(type = "closed", length = unit(0.1, "cm"))
+  ) +
+  theme_minimal() +
+  # coord_dartmouth +
+  labs(x = NULL, y = NULL) +
+  theme(
+    axis.text = element_blank(),
+    panel.grid = element_blank(), c
+  ) +
+  coord_fixed(
+    xlim = x_range - 0.0022,
+    ylim = y_range + 0.00015,
+    ratio = ratio
+  ) +
+  bg_transparent() +
+  transition_states(state, transition_length = c(2, 1, 2), state_length = c(2, 1, 4)) +
+  ease_aes("cubic-in-out")
+
+animate(dartmouth_play, res = 300, nframes = 100)
+```
+:::
+::::
+<div style="--cr-narrative-sidebar-width: 3fr;">
+::::{.cr-section}
+... <span style="color: #f07178;">**ski rose**</span>!<br><br>
+Similar to how [wind roses](https://en.wikipedia.org/wiki/Wind_rose) chart wind speed and direction at a location, ski roses characterize the directions of all trail segments at a ski area. 
+@cr-dartmouth-rose
+
+
+:::{#cr-dartmouth-rose}
+```{r dartmouth-rose, dev="png", dev.args=list(bg="transparent")}
+plot_rose(dartmouth_bears, "", labels = c("N", "E", "S", "W"))
+```
+:::
+
+Each *spoke* of the circular chart represents a compass direction, with its length proportional to the <span style="color: #FFC857;">**total length**</span> and <span style="color: #36B37E;">**vertical drop**</span> of trail segments in that direction.<br><br>
+Highlighted is the <span style="color: #f07178;">**Northwest by West**</span> spoke...
+@cr-rose-nwbw
+
+
+:::{#cr-rose-nwbw}
+```{r rose-nwbw}
+bears_play <- dartmouth_bears |>
+  mutate(
+    color = if_else((row_number()) != 28, "#004B59", "#f07178"),
+  )
+rose_highlight <- plot_rose(bears_play, "", labels = c("N", "E", "S", "W"), highlight = TRUE) +
+  geom_text(x = 300, y = 470, label = "NWbW", color = "#EBEBEB", size = 4)
+rose_highlight
+```
+:::
+
+:::{focus-on="cr-rose-nwbw"}
+... to which these particular segments contribute.
+```{r segments-highlight}
+# sysfonts::font_add_google("Quicksand", regular.wt = 500)
+# showtext::showtext_auto()
+
+seg_highlight <- segments |>
+  mutate(nwbw = group == 5) |>
+  ggplot() +
+  aes(x = x, y = y, xend = xend, yend = yend, color = nwbw) +
+  geom_segment(
+    # color = "#f07178",
+    arrow = arrow(type = "closed", length = unit(0.1, "cm"))
+  ) +
+  scale_color_manual(values = c("#004B59", "#f07178"), guide = "none") +
+  theme_minimal() +
+  coord_dartmouth +
+  labs(x = NULL, y = NULL) +
+  theme(
+    legend.position = "none",
+    axis.text = element_blank(),
+    panel.grid = element_blank(),
+  ) +
+  bg_transparent()
+seg_highlight
+```
+:::
+
+:::{focus-on="cr-rose-nne"}
+And here's the <span style="color: #f07178;">**North North East**</span> spoke.<br><br>
+While these NNE segments may seem small, their steepness contribute to a significantly larger spoke in the rose compared to others.
+```{r segments-highlight-nne}
+seg_highlight <- segments |>
+  mutate(nne = group == 30) |>
+  ggplot() +
+  aes(x = x, y = y, xend = xend, yend = yend, color = nne) +
+  geom_segment(
+    # color = "#f07178",
+    arrow = arrow(type = "closed", length = unit(0.1, "cm"))
+  ) +
+  scale_color_manual(values = c("#004B59", "#f07178"), guide = "none") +
+  theme_minimal() +
+  coord_dartmouth +
+  labs(x = NULL, y = NULL) +
+  theme(
+    legend.position = "none",
+    axis.text = element_blank(),
+    panel.grid = element_blank(),
+    # plot.title = element_text(size = 15, color = "#EBEBEB"),
+    # plot.title = element_text(size = 16, family = "Quicksand", color = "#EBEBEB"),
+  ) +
+  bg_transparent()
+seg_highlight
+```
+:::
+
+:::{#cr-rose-nne}
+```{r rose-nne}
+dartmouth_bears |>
+  mutate(
+    color = if_else((row_number()) != 3, "#004B59", "#f07178"),
+  ) |>
+  plot_rose("", labels = c("N", "E", "S", "W"), highlight = TRUE) +
+  geom_text(x = 22, y = 750, label = "NNE", color = "#EBEBEB", size = 4)
+```
+:::
+
+:::{focus-on="cr-rose-nne" scale-by="0.001"}
+We can do this for other ski areas too!
+:::
+
+::::
+</div>
+
+
+::::{.cr-section}
+
+Here are 48 more roses.
+What do you think?
+Do most of them look north-facing to you?
+[@cr-all-roses]
+
+:::{#cr-all-roses}
+```{r all-roses}
+#| cache: true
+cowplot::plot_grid(
+  plotlist = purrr::map2(
+    bearings_ls,
+    names(bearings_ls),
+    plot_rose,
+    size_x = 7,
+    size_title = 9,
+    type = "all"
+  )
+)
+```
+:::
+
+::::
+
+::::{.cr-section layout="overlay-center"}
+
+Our analysis revealed a clear <span style="color: #36B37E;">poleward</span> and slight <span style="color: #FFC857;">eastward</span> bias in ski area slopes.
+In other words, a majority of slopes in the northern atmosphere oriented toward the north and east. 
+
+
+This trend likely reflects the desire to maximize <span style="color: #36B37E;">snow retention</span> and minimize <span style="color: #FFC857;">sun exposure</span>, ensuring better skiing conditions and longer seasons.
+
+<!-- XXX hemisphere plot goes here -->
+::::
+
+
+:::{.cr-section layout="overlay-center"}
+In addition to trail bearings, we have published data on other key metrics of a ski area like <span style="color: #FFC857;">**total verts**</span>, <span style="color: #36B37E;">**number of lifts**</span>, and <span style="color: #FF8C42;"> **peak elevations**</span> for ski areas across the world.
+@cr-table
+
+Curious to learn more? 
+Head on over to [OpenSkiStats.org](https://openskistats.org/) to explore detailed statistics for ski areas worldwide.
+
+:::{#cr-table}
+![](images/table.png)
+:::
+:::
