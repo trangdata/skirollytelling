@@ -5,3 +5,7 @@
 .DS_Store
 
 data/
+archived/
+index_cache/
+index_files/
+index.html
