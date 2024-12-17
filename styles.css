@@ -1,13 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap');
 
 body {
-    font-family: 'Quicksand', sans-serif;
-}
-
-.chartTitle {
-  font-family: "Gaegu";
-  font-size: 1.2rem;
-  font-weight: bold;
+  font-family: 'Quicksand', sans-serif;
 }
 
 h1 {

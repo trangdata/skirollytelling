@@ -1,83 +1,71 @@
-library(dplyr)
+# library(dplyr)
+set.seed(1618)
 
-# runs <- arrow::read_parquet("data/runs.parquet")
-# dartmouth <- runs |>
-#   tidyr::unnest(ski_area_ids) |>
-#   dplyr::filter(ski_area_ids == "74e0060a96e0399ace1b1e5ef5af1e5197a19752") |>
-#   dplyr::select(run_id, run_name, run_difficulty, run_coordinates_clean)
-# dart <- dartmouth |>
-#   dplyr::mutate(run_coordinates_clean = purrr::map(run_coordinates_clean, ~ dplyr::select(.x, -segment_hash))) |>
-#   tidyr::unnest(run_coordinates_clean)
-# arrow::write_parquet(dart, "data/dartmouth_runs.parquet")
+## dartmouth_runs -----------------------------------------------------------
+runs <- arrow::read_parquet("data/runs.parquet")
+dartmouth <- runs |>
+  tidyr::unnest(ski_area_ids) |>
+  dplyr::filter(ski_area_ids == "74e0060a96e0399ace1b1e5ef5af1e5197a19752") |>
+  dplyr::select(run_id, run_name, run_difficulty, run_coordinates_clean)
+dart <- dartmouth |>
+  dplyr::mutate(run_coordinates_clean = purrr::map(run_coordinates_clean, ~ dplyr::select(.x, -segment_hash))) |>
+  tidyr::unnest(run_coordinates_clean)
+arrow::write_parquet(dart, "data/dartmouth_runs.parquet")
 
+## ----dartmouth_segs---------------------------------------------------------
 n_groups <- 32 # number of spokes
-step_deg <- 360/n_groups  # Step in degrees
+step_deg <- 360 / n_groups # Step in degrees
+boundaries <- seq(-step_deg / 2, 360, by = step_deg)
 
-# Create a sequence of boundaries in radians
-boundaries <- c(
-  seq(-step_deg/2, 360, by = step_deg)
-)
-
-segments <- dart %>%
-  rename(path = run_id, x = longitude, y = latitude) |>
-  group_by(path) %>%
-  arrange(index) |>
-  mutate(
+dartmouth_segs <- dart |>
+  dplyr::rename(path = run_id, x = longitude, y = latitude) |>
+  dplyr::group_by(path) |>
+  dplyr::arrange(index) |>
+  dplyr::mutate(
     index0 = index,
-    xend = lead(x), # Next x-coordinate
-    yend = lead(y),  # Next y-coordinate
-    dx = xend - x,  # x-direction
-    dy = yend - y,  # y-direction
-    scaled_dx = lead(distance_vertical)*dx/4,
-    scaled_dy = lead(distance_vertical)*dy/4,
-    tg = (atan2(dx, dy)*180/pi)%%360,
-    group = if_else(
-      dy < 0,  # For dx < 0, offset group numbers by 16
-      # 10-(33- findInterval(tg, boundaries)), # TODO
-      findInterval(tg, boundaries) - 1,
-      findInterval(tg, boundaries) - 1
-    ),
+    xend = dplyr::lead(x), # Next x-coordinate
+    yend = dplyr::lead(y), # Next y-coordinate
+    dx = xend - x,
+    dy = yend - y,
+    scaled_dx = dplyr::lead(distance_vertical) * dx / 4,
+    scaled_dy = dplyr::lead(distance_vertical) * dy / 4,
+    tg = (atan2(dx, dy) * 180 / pi) %% 360,
+    group = findInterval(tg, boundaries) - 1,
     group = group %% n_groups + 1,
     state = "a",
-  ) %>%
-  ungroup() |> 
-  mutate(index = row_number()) |> 
-  group_by(group) %>%
-  arrange(tg) %>%
-  ungroup() |> 
-  relocate(xend, yend, state, scaled_dx, scaled_dy, dx, dy,tg, group) |>
-  filter(!is.na(xend)) # Remove rows where there is no "next" point
+  ) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(index = dplyr::row_number()) |>
+  dplyr::group_by(group) |>
+  dplyr::arrange(tg) |>
+  dplyr::ungroup() |>
+  dplyr::relocate(xend, yend, state, scaled_dx, scaled_dy, dx, dy, tg, group) |>
+  dplyr::filter(!is.na(xend)) # Remove rows where there is no "next" point
 
+arrow::write_parquet(dartmouth_segs, "data/dartmouth_segs.parquet")
 
-plot_center <- segments %>%
-  ungroup() |>
-  summarise(
-    center_x = (min(x, xend) + max(x, xend)) / 2,
-    center_y = (min(y, yend) + max(y, yend)) / 2
+## ----bearings of 48 random ski areas + Dartmouth Skiway--------------------
+ski_area_metrics <- arrow::read_parquet("data/ski_area_metrics.parquet")
+bearings_ls <- ski_area_metrics |>
+  dplyr::filter(
+    run_count >= 3, combined_vertical >= 50, ski_area_name != "",
+    country == "United States", nchar(ski_area_name) < 20
+  ) |>
+  dplyr::sample_n(48) |>
+  dplyr::bind_rows(ski_area_metrics |> dplyr::filter(ski_area_name == "Dartmouth Skiway")) |>
+  dplyr::arrange(ski_area_name) |>
+  dplyr::select(ski_area_name, bearings) |>
+  tibble::deframe() |>
+  lapply(
+    \(x) dplyr::filter(x, num_bins == 32) |>
+      dplyr::mutate(
+        color = dplyr::if_else(bin_index == 2, "#f07178", "#004B59"),
+      )
   )
-# Center the plot at calculated center
-segments_transformed <- segments %>%
-  mutate(
-    x = plot_center$center_x,  # Shift start to plot center
-    y = plot_center$center_y,  # Shift start to plot center
-    xend = x + dx,      # Adjust endpoint
-    yend = y + dy       # Adjust endpoint
-  )
+saveRDS(bearings_ls, "data/bearings_48_ls.rds")
 
-segments_transformed_c <- segments_transformed %>%
-  arrange(path, index) |>
-  mutate(
-    xend = x + scaled_dx,      # Adjust endpoint
-    yend = y + scaled_dy,       # Adjust endpoint
-    state = "c"
-  )
-
-# Combine original and transformed data for animation
-dartmouth_play <- bind_rows(
-  segments,
-  segments_transformed %>% mutate(state = "b"),
-  segments_transformed_c,
-)
-
-write_parquet(dartmouth_play, "data/dartmouth_play.parquet")
+## ----hemispheres-----------------------------------------------------------
+arrow::read_parquet("data/hemisphere_roses.parquet") |>
+  tidyr::unnest(bearings) |> 
+  arrow::write_parquet("data/hemisphere_roses_unnest.parquet")
 

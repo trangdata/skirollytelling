@@ -4,6 +4,14 @@ source("data.R")
 
 # dartmouth_play <- dartmouth_play_df
 
+x_wide <- x_range[2] - x_range[1]
+hemi |> 
+  filter(num_bins == n_groups) |> 
+  plot_rose(NULL, hemi = TRUE)
+
+hemi |> 
+  filter(num_bins == n_groups, hemisphere == "south") |> 
+  plot_rose("Southern hemisphere")
 
 # segments_transformed_f <- segments %>%
 #   mutate(
@@ -79,7 +87,7 @@ animated_plot <- # |>
     state_length = 1,
     wrap = FALSE
   ) +
-  coord_dartmouth_play +
+  # coord_dartmouth_play +
   # coord_dartmouth +
   labs(title = "Animation of Segments: {closest_state}") +
   theme_minimal() +
@@ -307,36 +315,6 @@ bearings_ls <- dat |>
   )
 
 
-
-plot_rose <- function(dat, ski_area_name, highlight = FALSE, labels = NULL) {
-  plot <- dat |>
-    ggplot() +
-    aes(x = bin_center, y = bin_count) +
-    coord_radial(start = -pi / 32, expand = FALSE) +
-    scale_x_continuous(
-      breaks = seq(0, 270, 90),
-      labels = labels
-    ) +
-    scale_y_continuous(
-      breaks = max(dat$bin_count)
-    ) +
-    labs(title = ski_area_name) +
-    theme_minimal() +
-    theme(
-      axis.title = element_blank(),
-      axis.text.y = element_blank(),
-      # axis.text.x = element_text(size = 20),
-      plot.title = element_text(hjust = 0.5)
-    )
-  if (!highlight) {
-    plot <- plot + geom_col(fill = "#f07178")
-  } else {
-    plot <- plot +
-      geom_col(aes(fill = color)) +
-      scale_fill_identity()
-  }
-  plot
-}
 whaleback <- bearings_ls[["Whaleback Mountain"]]
 # plot_rose(whaleback, "Whaleback Mountain", labels = c("N", "E", "S", "W"))
 # plot_rose(whaleback, "Whaleback Mountain", TRUE, labels = c("N", "E", "S", "W"))

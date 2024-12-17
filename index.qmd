@@ -34,7 +34,7 @@ Skiers and riders, you’ve all seen these trail maps—they're essential for na
 
 In particular, this map, beautifully painted by the legendary [James Niehues](https://en.wikipedia.org/wiki/James_Niehues), is of the <span style="color: #FF8C42;">**South Face**</span> of Big Sky, Montana.
 
-But have you ever wondered how common south-facing slopes are? In other words, do most ski trails in this hemisphere favor <span style="color: #FF8C42;">*southern*</span> exposure, or are they more often found on the <span style="color: #36B37E;">*north*</span> side of the mountain?
+But have you ever wondered how common south-facing slopes are? In other words, do most ski trails in this hemisphere favor <span style="color: #FF8C42;">**southern**</span> exposure, or are they more often found on the <span style="color: #36B37E;">**north**</span> side of the mountain?
 @cr-southface
 
 :::{#cr-southface}
@@ -83,20 +83,13 @@ These are the two signature sides of the Skiway, <span style="color: #FF8C42;">*
 
 :::{#cr-dots-overlay}
 ```{r dots-overlay}
-x1 <- -72.095
-y1 <- 43.7775
-x2 <- -72.101
-y2 <- 43.7900
-m <- (y2 - y1) / (x2 - x1)
-b <- y1 - m * x1
+
 
 dart |>
-  mutate(winslow = (m * longitude) + b < latitude) |>
-  arrange(index) |>
   ggplot() +
   aes(x = longitude, y = latitude, color = winslow) +
   scale_color_manual(values = c("#FF8C42", "#36B37E"), guide = "none") +
-  background_image(dartmouth_img) +
+  ggpubr::background_image(dartmouth_img) +
   geom_point(size = 0.5) +
   coord_dartmouth +
   bg_transparent()
@@ -110,8 +103,6 @@ and glide right to the bottom of <span style="color: #FF8C42;">Holt's</span> Led
 :::{#cr-dots-only}
 ```{r dots-only}
 dart |>
-  mutate(winslow = (m * longitude) + b < latitude) |>
-  arrange(index) |>
   ggplot() +
   aes(x = longitude, y = latitude, color = winslow) +
   scale_color_manual(values = c("#FF8C42", "#36B37E"), guide = "none") +
@@ -121,12 +112,9 @@ dart |>
 ```
 :::
 
-If we gather the coordinates for all trail segments and connect the dots, ...
-[@cr-segments]
-
 :::{#cr-segments}
 ```{r segments}
-ggplot(segments) +
+ggplot(dartmouth_segs) +
   geom_segment(
     color = "#f07178",
     aes(x = x, y = y, xend = xend, yend = yend),
@@ -137,40 +125,11 @@ ggplot(segments) +
 ```
 :::
 
-we can treat each of these segments as a <span style="color: #f07178;">**vector**</span>,
+If we gather the coordinates for all trail segments and connect the dots, we can treat each of these segments as a <span style="color: #f07178;">vector</span>,
 scale the vectors by their <span style="color: #FFC857;">vertical drops</span>,
 and summarize them in a ...
-[@cr-dartmouth-play]
-<!-- #| fig-width: 7 -->
-<!-- #| fig-height: 5 -->
-<!-- #| out-width: "88.5%" -->
+[@cr-segments]
 
-:::{#cr-dartmouth-play}
-```{r dartmouth-play}
-#| cache: true
-dartmouth_play <- ggplot(dartmouth_play_df) +
-  geom_segment(
-    color = "#f07178",
-    alpha = 0.8,
-    aes(x = x, y = y, xend = xend, yend = yend),
-    arrow = arrow(type = "closed", length = unit(0.1, "cm"))
-  ) +
-  # coord_dartmouth +
-  bg_transparent() +
-  theme(
-    panel.grid = element_blank(),
-  ) +
-  coord_fixed(
-    xlim = x_range - 0.0022,
-    ylim = y_range + 0.00015,
-    ratio = ratio
-  ) +
-  transition_states(state, transition_length = c(2, 1, 2), state_length = c(2, 1, 8)) +
-  ease_aes("cubic-in-out")
-
-animate(dartmouth_play, res = 300, nframes = 100)
-```
-:::
 ::::
 <div style="--cr-narrative-sidebar-width: 3fr;">
 ::::{.cr-section}
@@ -205,7 +164,7 @@ rose_highlight
 :::{focus-on="cr-rose-nwbw"}
 ... to which these particular segments contribute.
 ```{r segments-highlight}
-segments |>
+dartmouth_segs |>
   mutate(nwbw = group == 28) |>
   ggplot() +
   aes(x = x, y = y, xend = xend, yend = yend, color = nwbw) +
@@ -223,9 +182,9 @@ segments |>
 
 :::{focus-on="cr-rose-nne"}
 And here's the <span style="color: #f07178;">**North North East**</span> spoke.<br><br>
-While these NNE segments may seem small, their steepness contribute to a significantly larger spoke in the rose compared to others.
+While these NNE segments may seem small, their verticals contribute to a significantly larger spoke in the rose compared to others.
 ```{r segments-highlight-nne}
-segments |>
+dartmouth_segs |>
   mutate(nne = group == 3) |>
   ggplot() +
   aes(x = x, y = y, xend = xend, yend = yend, color = nne) +
@@ -283,15 +242,28 @@ cowplot::plot_grid(
 ```
 :::
 
-::::
-
-::::{.cr-section layout="overlay-center"}
-
-Our analysis revealed a clear <span style="color: #36B37E;">poleward</span> and slight <span style="color: #FFC857;">eastward</span> bias in ski area slopes.
-In other words, a majority of slopes in the northern atmosphere oriented toward the north and east. 
-
+Our analysis of the slopes of *all* ski areas across the globe revealed a clear <span style="color: #36B37E;">poleward</span> and slight <span style="color: #FFC857;">eastward</span> bias.<br><br>
+In other words, the majority of slopes in the <span style="color: #36B37E;">northern</span> hemisphere oriented toward the <span style="color: #36B37E;">north</span> and <span style="color: #FFC857;">east</span> ,
+while those in the <span style="color: #36B37E;">southern</span> hemisphere are oriented toward the <span style="color: #36B37E;">south</span> and <span style="color: #FFC857;">east</span>.
+@cr-hemisphere
 
 This trend likely reflects the desire to maximize <span style="color: #36B37E;">snow retention</span> and minimize <span style="color: #FFC857;">sun exposure</span>, ensuring better skiing conditions and longer seasons.
+@cr-hemisphere
+
+:::{#cr-hemisphere}
+```{r hemisphere}
+#| fig-width: 10
+north <- hemi |> 
+  filter(num_bins == n_groups, hemisphere == "north") |> 
+  plot_rose("Northern hemisphere", labels = c("N", "E", "S", "W"), size_title = 18)
+
+south <- hemi |> 
+  filter(num_bins == n_groups, hemisphere == "south") |> 
+  plot_rose("Southern hemisphere", labels = c("N", "E", "S", "W"), size_title = 18)
+
+cowplot::plot_grid(north, south, ncol = 2)
+```
+:::
 
 ::::
 

@@ -1,23 +1,26 @@
-library(arrow)
+library(nanoparquet)
 library(dplyr)
-library(tibble)
 library(ggplot2)
-library(gganimate)
-library(ggpubr)
-set.seed(1618)
 
-dat <- read_parquet("data/ski_area_metrics.parquet")
-dart <- read_parquet("data/dartmouth_runs.parquet") |>
-  group_by(run_id)
-dartmouth_play_df <- read_parquet("data/dartmouth_play.parquet")
-segments <- dartmouth_play_df |>
-  filter(state == "a")
+x1 <- -72.095
+y1 <- 43.7775
+x2 <- -72.101
+y2 <- 43.7900
+m <- (y2 - y1) / (x2 - x1)
+b <- y1 - m * x1
+
+bearings_ls <- readRDS("data/bearings_48_ls.rds")
+dartmouth_segs <- read_parquet("data/dartmouth_segs.parquet")
 dartmouth_img <- png::readPNG("images/dartmouth.png", native = TRUE)
+hemi <- read_parquet("data/hemisphere_roses_unnest.parquet")
+dart <- read_parquet("data/dartmouth_runs.parquet") |>
+  group_by(run_id) |>
+  mutate(winslow = (m * longitude) + b < latitude) |>
+  arrange(index)
 
+n_groups <- 32 # number of spokes
 x_range <- c(-72.1128, -72.081)
 y_range <- c(43.7781, 43.7902)
-x_wide <- x_range[2] - x_range[1]
-
 length_x <- diff(x_range) # Length in x-direction
 length_y <- diff(y_range) # Length in y-direction
 
@@ -28,46 +31,23 @@ coord_dartmouth <- coord_fixed(
   ylim = y_range,
   ratio = ratio
 )
-coord_dartmouth_play <- coord_fixed(
-  xlim = c(x_range[1], x_range[2] + x_wide),
-  ylim = y_range,
-  ratio = ratio
-)
-
-bearings_ls <- dat |>
-  filter(
-    run_count >= 3, combined_vertical >= 50, ski_area_name != "",
-    country == "United States", nchar(ski_area_name) < 20
-  ) |>
-  sample_n(48) |>
-  # bind_rows(dat |> filter(ski_area_name == "Whaleback Mountain")) |>
-  bind_rows(dat |> filter(ski_area_name == "Dartmouth Skiway")) |>
-  arrange(ski_area_name) |>
-  select(ski_area_name, bearings) |>
-  deframe() |>
-  lapply(
-    \(x) filter(x, num_bins == 32) |>
-      mutate(
-        color = if_else(bin_index == 2, "#f07178", "#004B59"),
-      )
-  )
 
 colors <- c("#f07178", "#004B59", "#FFC857", "#36B37E", "#FF8C42", "#F4F1E9", "#8A9393", "#2A2D34")
 
 bg_transparent <- function() {
   theme_minimal() +
-  theme(
-    panel.background = element_rect(fill = "transparent", colour = NA),
-    plot.background = element_rect(fill = "transparent", colour = NA),
-    axis.title = element_blank(),
-    axis.text = element_blank(),
-    legend.position = "none",
-  )
+    theme(
+      panel.background = element_rect(fill = "transparent", colour = NA),
+      plot.background = element_rect(fill = "transparent", colour = NA),
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      legend.position = "none",
+    )
 }
 plot_rose <- function(dat, ski_area_name, size_title = 24, size_x = 20, highlight = FALSE, labels = NULL, type = NULL) {
   plot <- dat |>
     ggplot() +
-    aes(x = bin_center, y = bin_count) +
+    aes(x = bin_center, y = bin_proportion) +
     coord_radial(start = -pi / 32, expand = FALSE) +
     # coord_polar(start = -pi / 32) +
     scale_x_continuous(
@@ -75,16 +55,12 @@ plot_rose <- function(dat, ski_area_name, size_title = 24, size_x = 20, highligh
       labels = labels
     ) +
     scale_y_continuous(
-      breaks = max(dat$bin_count)
+      breaks = max(dat$bin_proportion)
     ) +
     labs(title = ski_area_name) +
-    theme_minimal() +
+    bg_transparent() +
     theme(
-      axis.title = element_blank(),
-      axis.text.y = element_blank(),
       axis.text.x = element_text(size = size_x, color = "#EBEBEB"),
-      panel.background = element_rect(fill = "transparent", colour = NA),
-      plot.background = element_rect(fill = "transparent", colour = NA),
       plot.title = element_text(hjust = 0.5, size = size_title, color = "#EBEBEB")
     )
   if (!is.null(type)) {
@@ -102,6 +78,6 @@ plot_rose <- function(dat, ski_area_name, size_title = 24, size_x = 20, highligh
   }
   plot
 }
-# whaleback <- bearings_ls[["Whaleback Mountain"]]
 dartmouth <- bearings_ls[["Dartmouth Skiway"]]
+# whaleback <- bearings_ls[["Whaleback Mountain"]]
 # killington <- bearings_ls[["Killington Resort"]]
